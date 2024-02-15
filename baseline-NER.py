@@ -36,16 +36,21 @@ def tokenize(txt):
 ## -----------------------------------------------
 ## -- check if a token is a drug part, and of which type
 
-suffixes = ['azole', 'idine', 'amine', 'mycin']
+suffixes_drug = ['hloride', 'osphate', 'sodium', 'hydrate', 'pollen', 'acetate', 'sulfate']
+suffixes_brand = ['relief', 'nitizer', 'trength', 'nscreen', 'eatment', 'odorant', 'tablets']
+
 
 def classify_token(txt):
 
    # WARNING: This function must be extended with 
    #          more and better rules
 
+   txt = txt.lower()
    if txt.lower() in external : return external[txt.lower()]
-   elif txt.isupper() : return "brand"
-   elif txt[-5:] in suffixes : return "drug"
+   #elif txt.isupper() : return "brand"
+   elif txt[-7:] in suffixes_drug : return "drug"
+   elif txt[-7:] in suffixes_brand : return "brand"
+
    else : return "NONE"
 
    
