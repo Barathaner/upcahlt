@@ -36,8 +36,11 @@ def tokenize(txt):
 ## -----------------------------------------------
 ## -- check if a token is a drug part, and of which type
 
+
+
 suffixes_drug = ['hloride', 'osphate', 'sodium', 'hydrate', 'pollen', 'acetate', 'sulfate']
 suffixes_brand = ['relief', 'nitizer', 'trength', 'nscreen', 'eatment', 'odorant', 'tablets']
+
 
 
 def classify_token(txt):
@@ -45,11 +48,39 @@ def classify_token(txt):
    # WARNING: This function must be extended with 
    #          more and better rules
 
-   txt = txt.lower()
+
+
    if txt.lower() in external : return external[txt.lower()]
-   #elif txt.isupper() : return "brand"
-   elif txt[-7:] in suffixes_drug : return "drug"
-   elif txt[-7:] in suffixes_brand : return "brand"
+
+   #txt = txt.lower()
+   #elif txt[-7:] in suffixes_drug : return "drug"
+   #elif txt[-7:] in suffixes_brand : return "brand"
+
+   # achieves 45.7% F1
+
+   elif (txt[0].isupper() and not txt.isupper() and len(txt) > 13): return "group"
+   elif any(char.isdigit() for char in txt) and len(txt) > 8: return "drug_n"
+   
+   
+   
+   # other rules, not very successful
+
+   #elif any(txt.startswith(prefix) for prefix in prefixes_drug_n): return "drug_n"
+   #elif any(txt.startswith(prefix) for prefix in prefixes_drug): return "drug"
+   #elif any(txt.startswith(prefix) for prefix in prefixes_group): return "group"
+   #elif any(txt.startswith(prefix) for prefix in prefixes_brand): return "brand"
+   
+   #if any(not char.isalnum() for char in txt) and len(txt) > 16: return "group"
+
+   #elif len(txt) < 13 and txt.islower() : return "drug"
+
+   #elif len(txt) >= 13 and txt.islower() : return "group"
+   
+   #if any(not char.isalnum() for char in txt) and len(txt) > 16: return "group"
+
+   #elif txt.isupper() and len(txt) < 2: return "brand"
+
+   #elif '-' in txt : return "drug"
 
    else : return "NONE"
 
