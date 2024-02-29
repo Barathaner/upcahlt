@@ -60,6 +60,11 @@ def classify_token(txt):
 
    elif (txt[0].isupper() and not txt.isupper() and len(txt) > 13): return "group"
    elif any(char.isdigit() for char in txt) and len(txt) > 8: return "drug_n"
+
+
+   #elif txt[-3:] in ['ine'] : return "drug"
+
+   #elif txt[-3:] in ['CIN'] : return "brand"
    
    
    
@@ -99,17 +104,41 @@ def extract_entities(stext) :
     tokens = tokenize(stext)
          
     result = []
-    # classify each token and decide whether it is an entity.
-    for (token_txt, token_start, token_end)  in tokens:
+    i = 0
+    while i < len(tokens):
+        token_txt, token_start, token_end = tokens[i]
         drug_type = classify_token(token_txt)
-        
-        if drug_type != "NONE" :
-            e = { "offset" : str(token_start)+"-"+str(token_end),
-                  "text" : stext[token_start:token_end+1],
-                  "type" : drug_type
-                 }
+
+        # Check for multi-token entities
+        if drug_type != "NONE":
+            # Initialize multi-token entity variables
+            entity_start = token_start
+            entity_end = token_end
+            entity_type = drug_type
+
+            # Look ahead to see if the next token(s) are part of a multi-token entity
+            j = i + 1
+            while j < len(tokens):
+                next_token_txt, next_token_start, next_token_end = tokens[j]
+                next_drug_type = classify_token(next_token_txt)
+
+                # Check if the next token is part of the current entity
+                if next_drug_type == drug_type or (next_drug_type != "NONE" and entity_type in ["drug", "group"]):
+                    entity_end = next_token_end
+                    i = j
+                else:
+                    break
+                j += 1
+
+            # Add the entity to the results
+            e = {
+                "offset": str(entity_start) + "-" + str(entity_end),
+                "text": stext[entity_start:entity_end + 1],
+                "type": entity_type
+            }
             result.append(e)
-                    
+        i += 1
+
     return result
       
 ## --------- main function ----------- 
