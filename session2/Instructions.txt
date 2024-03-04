@@ -1,0 +1,17 @@
+extract features - train data
+python3 extract-features.py ../data/train > train.feat
+
+train model
+python3 train.py train.feat model.crf
+
+
+
+extract features - devel data
+python3 extract-features.py ../data/devel > devel.feat
+
+predict with trained model
+python3 predict.py devel.feat model.crf > devel.out 
+
+evaulate predictions
+python3 ../util/evaluator.py NER ../data/devel devel.out   
+
