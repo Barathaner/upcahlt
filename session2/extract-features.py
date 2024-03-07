@@ -8,9 +8,19 @@ from xml.dom.minidom import parse
 from nltk.tokenize import word_tokenize
 
 
-   
-## --------- tokenize sentence ----------- 
+external = {}
+with open("../resources/HSDB.txt", encoding="utf-8") as h:
+    for x in h.readlines():
+        external[x.strip().lower()] = "drug"
+with open("../resources/DrugBank.txt", encoding="utf-8") as h:
+    for x in h.readlines():
+        (n, t) = x.strip().lower().split("|")
+        external[n] = t
+
+
+## --------- tokenize sentence -----------
 ## -- Tokenize sentence, returning tokens and span offsets
+
 
 def tokenize(txt):
     offset = 0
@@ -20,58 +30,90 @@ def tokenize(txt):
         ## keep track of the position where each token should appear, and
         ## store that information with the token
         offset = txt.find(t, offset)
-        tks.append((t, offset, offset+len(t)-1))
+        tks.append((t, offset, offset + len(t) - 1))
         offset += len(t)
 
     ## tks is a list of triples (word,start,end)
     return tks
 
 
-## --------- get tag ----------- 
+## --------- get tag -----------
 ##  Find out whether given token is marked as part of an entity in the XML
 
-def get_tag(token, spans) :
-   (form,start,end) = token
-   for (spanS,spanE,spanT) in spans :
-      if start==spanS and end<=spanE : return "B-"+spanT
-      elif start>=spanS and end<=spanE : return "I-"+spanT
 
-   return "O"
- 
-## --------- Feature extractor ----------- 
+def get_tag(token, spans):
+    (form, start, end) = token
+    for spanS, spanE, spanT in spans:
+        if start == spanS and end <= spanE:
+            return "B-" + spanT
+        elif start >= spanS and end <= spanE:
+            return "I-" + spanT
+
+    return "O"
+
+
+## --------- Feature extractor -----------
 ## -- Extract features for each token in given sentence
 
-def extract_features(tokens) :
 
-   # for each token, generate list of features and add it to the result
-   result = []
-   for k in range(0,len(tokens)):
-      tokenFeatures = [];
-      t = tokens[k][0]
+def extract_features(tokens):
 
-      tokenFeatures.append("form="+t)
-      tokenFeatures.append("suf3="+t[-3:])
+    # for each token, generate list of features and add it to the result
+    result = []
+    for k in range(len(tokens)):
+        tokenFeatures = []
+        t = tokens[k][0]
 
-      if k>0 :
-         tPrev = tokens[k-1][0]
-         tokenFeatures.append("formPrev="+tPrev)
-         tokenFeatures.append("suf3Prev="+tPrev[-3:])
-      else :
-         tokenFeatures.append("BoS")
+        # External lists
 
-      if k<len(tokens)-1 :
-         tNext = tokens[k+1][0]
-         tokenFeatures.append("formNext="+tNext)
-         tokenFeatures.append("suf3Next="+tNext[-3:])
-      else:
-         tokenFeatures.append("EoS")
-    
-      result.append(tokenFeatures)
-    
-   return result
+        if t.lower() in external:
+            tokenFeatures.append("external=" + external[t.lower()])
+
+        else:
+            tokenFeatures.append("external=none")
+
+        # Basic features
+        tokenFeatures.append("form=" + t)
+        tokenFeatures.append("suf3=" + t[-3:])
+        tokenFeatures.append("low=" + t.lower())  # Lowercase form
+        tokenFeatures.append("isUpper=" + str(t.isupper()))  # All uppercase
+        tokenFeatures.append("isTitle=" + str(t.istitle()))  # Titlecase
+        tokenFeatures.append(
+            "hasDigit=" + str(any(char.isdigit() for char in t))
+        )  # Contains digit
+        tokenFeatures.append("hasDash=" + str("-" in t))  # Contains dash
+        tokenFeatures.append("tokenLen=" + str(len(t)))  # Token length
+
+        # Prefix and suffix of different lengths
+        for i in range(1, 4):  # Example: Up to 3 characters
+            if len(t) > i:
+                tokenFeatures.append(f"prefix{i}=" + t[:i])
+                tokenFeatures.append(f"suffix{i}=" + t[-i:])
+
+        # Contextual features for previous token
+        if k > 0:
+            tPrev = tokens[k - 1][0]
+            tokenFeatures.append("formPrev=" + tPrev)
+            tokenFeatures.append("suf3Prev=" + tPrev[-3:])
+            tokenFeatures.append("isUpperPrev=" + str(tPrev.isupper()))
+        else:
+            tokenFeatures.append("BoS")
+
+        # Contextual features for next token
+        if k < len(tokens) - 1:
+            tNext = tokens[k + 1][0]
+            tokenFeatures.append("formNext=" + tNext)
+            tokenFeatures.append("suf3Next=" + tNext[-3:])
+            tokenFeatures.append("isUpperNext=" + str(tNext.isupper()))
+        else:
+            tokenFeatures.append("EoS")
+
+        result.append(tokenFeatures)
+
+    return result
 
 
-## --------- MAIN PROGRAM ----------- 
+## --------- MAIN PROGRAM -----------
 ## --
 ## -- Usage:  baseline-NER.py target-dir
 ## --
@@ -84,36 +126,43 @@ def extract_features(tokens) :
 datadir = sys.argv[1]
 
 # process each file in directory
-for f in listdir(datadir) :
-   
-   # parse XML file, obtaining a DOM tree
-   tree = parse(datadir+"/"+f)
-   
-   # process each sentence in the file
-   sentences = tree.getElementsByTagName("sentence")
-   for s in sentences :
-      sid = s.attributes["id"].value   # get sentence id
-      spans = []
-      stext = s.attributes["text"].value   # get sentence text
-      entities = s.getElementsByTagName("entity")
-      for e in entities :
-         # for discontinuous entities, we only get the first span
-         # (will not work, but there are few of them)
-         (start,end) = e.attributes["charOffset"].value.split(";")[0].split("-")
-         typ =  e.attributes["type"].value
-         spans.append((int(start),int(end),typ))
-         
+for f in listdir(datadir):
 
-      # convert the sentence to a list of tokens
-      tokens = tokenize(stext)
-      # extract sentence features
-      features = extract_features(tokens)
+    # parse XML file, obtaining a DOM tree
+    tree = parse(datadir + "/" + f)
 
-      # print features in format expected by crfsuite trainer
-      for i in range (0,len(tokens)) :
-         # see if the token is part of an entity
-         tag = get_tag(tokens[i], spans) 
-         print (sid, tokens[i][0], tokens[i][1], tokens[i][2], tag, "\t".join(features[i]), sep='\t')
+    # process each sentence in the file
+    sentences = tree.getElementsByTagName("sentence")
+    for s in sentences:
+        sid = s.attributes["id"].value  # get sentence id
+        spans = []
+        stext = s.attributes["text"].value  # get sentence text
+        entities = s.getElementsByTagName("entity")
+        for e in entities:
+            # for discontinuous entities, we only get the first span
+            # (will not work, but there are few of them)
+            (start, end) = e.attributes["charOffset"].value.split(";")[0].split("-")
+            typ = e.attributes["type"].value
+            spans.append((int(start), int(end), typ))
 
-      # blank line to separate sentences
-      print()
+        # convert the sentence to a list of tokens
+        tokens = tokenize(stext)
+        # extract sentence features
+        features = extract_features(tokens)
+
+        # print features in format expected by crfsuite trainer
+        for i in range(0, len(tokens)):
+            # see if the token is part of an entity
+            tag = get_tag(tokens[i], spans)
+            print(
+                sid,
+                tokens[i][0],
+                tokens[i][1],
+                tokens[i][2],
+                tag,
+                "\t".join(features[i]),
+                sep="\t",
+            )
+
+        # blank line to separate sentences
+        print()
