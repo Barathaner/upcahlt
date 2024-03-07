@@ -65,10 +65,8 @@ def extract_features(tokens):
         t = tokens[k][0]
 
         # External lists
-
         if t.lower() in external:
             tokenFeatures.append("external=" + external[t.lower()])
-
         else:
             tokenFeatures.append("external=none")
 
