@@ -13,7 +13,7 @@ class Dataset :
     def __init__(self, datafile) :
         self.fidx = {}
         self.sentences = []
-        with open(datafile) as df :
+        with open(datafile, encoding='utf-16') as df :
             for xseq, yseq, toks in self.__sequences(df):
                 # load pair
                 self.sentences.append((xseq,yseq,toks))
@@ -39,10 +39,8 @@ class Dataset :
                 yseq = []
                 toks = []
                 continue
-            
             # Split the line with TAB characters.
             fields = line.split('\t')
-
             # Append the item features to the item sequence.
             # fields are:  0=sid, 1=form, 2=span_start, 3=span_end, 4=tag, 5...N = features
             toks.append(fields[:4]) # token info (sid, form, span)
