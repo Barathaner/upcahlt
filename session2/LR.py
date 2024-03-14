@@ -20,9 +20,9 @@ class LR:
 
         if modelfile is not None:
             # modelfile given, assume it is an existing model and load it
-            with open(modelfile, "rb") as df:
+            with open(modelfile, "rb", encoding="utf-16") as df:
                 self.tagger = pickle.load(df)
-            with open(modelfile + ".idx", "rb") as df:
+            with open(modelfile + ".idx", "rb", encoding="utf-16") as df:
                 self.fidx = pickle.load(df)
         else:
             # no model file, create an empty model, waiting to be trained

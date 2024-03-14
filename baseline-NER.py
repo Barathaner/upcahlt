@@ -89,57 +89,58 @@ def classify_token(txt):
 
    else : return "NONE"
 
-   
+def classify_token_ngram(txt):
+   if txt.lower() in external : return external[txt.lower()]
+   else : return "NONE"
 
 ## --------- Entity extractor ----------- 
 ## -- Extract drug entities from given text and return them as
 ## -- a list of dictionaries with keys "offset", "text", and "type"
 
-def extract_entities(stext) :
-
-    # WARNING: This function must be extended to
-    #          deal with multi-token entities.
-    
-    # tokenize text
+def extract_entities(stext):
     tokens = tokenize(stext)
-         
+    
     result = []
     i = 0
     while i < len(tokens):
         token_txt, token_start, token_end = tokens[i]
         drug_type = classify_token(token_txt)
 
-        # Check for multi-token entities
-        if drug_type != "NONE":
-            # Initialize multi-token entity variables
-            entity_start = token_start
-            entity_end = token_end
-            entity_type = drug_type
+        entity_start = token_start
+        entity_end = token_end
+        entity_tokens = [token_txt]
+        entity_type = drug_type
 
-            # Look ahead to see if the next token(s) are part of a multi-token entity
-            j = i + 1
-            while j < len(tokens):
-                next_token_txt, next_token_start, next_token_end = tokens[j]
-                next_drug_type = classify_token(next_token_txt)
+        # Check the next tokens to form n-grams
+        for look_ahead in range(1, 3):  # up to 4 additional tokens
+            if i + look_ahead < len(tokens):
+                next_token_txt, next_token_start, next_token_end = tokens[i + look_ahead]
+                entity_tokens.append(next_token_txt)
+                ngram_token = ' '.join(entity_tokens)
+                ngram_token_type = classify_token_ngram(ngram_token)
 
-                # Check if the next token is part of the current entity
-                if next_drug_type == drug_type or (next_drug_type != "NONE" and entity_type in ["drug", "group"]):
+                if ngram_token_type != "NONE":
                     entity_end = next_token_end
-                    i = j
+                    entity_type = ngram_token_type
                 else:
-                    break
-                j += 1
+                    entity_tokens.pop()  # Remove last token since it's not part of the entity
+                    break  # Stop looking ahead as the n-gram is not an entity
 
-            # Add the entity to the results
-            e = {
-                "offset": str(entity_start) + "-" + str(entity_end),
-                "text": stext[entity_start:entity_end + 1],
-                "type": entity_type
-            }
-            result.append(e)
-        i += 1
+        if entity_type=="NONE" :
+            i += 1
+            continue
+        # Construct and append the entity information to the result list
+        e = {
+            "offset": str(entity_start) + "-" + str(entity_end),
+            "text": stext[entity_start:entity_end + 1],
+            "type": entity_type
+        }
+        result.append(e)
+        i += len(entity_tokens) - 1  # Adjust `i` based on the number of tokens in the entity
+        i += 1  # Proceed to the next token
 
     return result
+
       
 ## --------- main function ----------- 
 
