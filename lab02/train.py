@@ -9,7 +9,7 @@ from ML_model import *
 ## CRF
 
 # Load parameter settings from the JSON file
-params_file = "crf_params.json"
+params_file = "params_crf.json"
 with open(params_file, "r") as file:
     param_settings = json.load(file)
 
@@ -36,7 +36,7 @@ for experiment, params in param_settings.items():
 ## LR
 
 # Load parameter settings from the JSON file
-params_file = "lr_params.json"
+params_file = "params_lr.json"
 with open(params_file, "r") as file:
     param_settings = json.load(file)
 
