@@ -60,7 +60,7 @@ def extract_features(tokens):
 
     # for each token, generate list of features and add it to the result
     result = []
-    for k in range(len(tokens)):
+    for k in range(0, len(tokens)):
         tokenFeatures = []
         t = tokens[k][0]
 
@@ -73,35 +73,43 @@ def extract_features(tokens):
         # Basic features
         tokenFeatures.append("form=" + t)
         tokenFeatures.append("suf3=" + t[-3:])
-        tokenFeatures.append("low=" + t.lower())  # Lowercase form
-        tokenFeatures.append("isUpper=" + str(t.isupper()))  # All uppercase
-        tokenFeatures.append("isTitle=" + str(t.istitle()))  # Titlecase
-        tokenFeatures.append(
-            "hasDigit=" + str(any(char.isdigit() for char in t))
-        )  # Contains digit
-        tokenFeatures.append("hasDash=" + str("-" in t))  # Contains dash
-        tokenFeatures.append("tokenLen=" + str(len(t)))  # Token length
+        # Prefix
+        tokenFeatures.append("pref3=" + t[:3])
+        # Lowercase form
+        tokenFeatures.append("low=" + t.lower())
+        # All uppercase
+        tokenFeatures.append("isUpper=" + str(t.isupper()))
+        # Titlecase
+        tokenFeatures.append("isTitle=" + str(t.istitle()))
+        # Contains digits
+        tokenFeatures.append("hasDigit=" + str(any(char.isdigit() for char in t)))
+        # Contains dash
+        tokenFeatures.append("hasDash=" + str("-" in t))
+        # Token length
+        tokenFeatures.append("tokenLen=" + str(len(t)))
 
-        # Prefix and suffix of different lengths
-        for i in range(1, 4):  # Example: Up to 3 characters
+        # Prefix and suffix of different lengths up to 4 characters
+        for i in range(1, 5):
             if len(t) > i:
                 tokenFeatures.append(f"prefix{i}=" + t[:i])
                 tokenFeatures.append(f"suffix{i}=" + t[-i:])
 
-        # Contextual features for previous token
+        # Contextual features for previous token: form, suffix, prefix, uppercase
         if k > 0:
             tPrev = tokens[k - 1][0]
             tokenFeatures.append("formPrev=" + tPrev)
             tokenFeatures.append("suf3Prev=" + tPrev[-3:])
+            tokenFeatures.append("pref3Prev=" + tPrev[:3])
             tokenFeatures.append("isUpperPrev=" + str(tPrev.isupper()))
         else:
             tokenFeatures.append("BoS")
 
-        # Contextual features for next token
+        # Contextual features for next token: form, suffix, prefix, uppercase
         if k < len(tokens) - 1:
             tNext = tokens[k + 1][0]
             tokenFeatures.append("formNext=" + tNext)
             tokenFeatures.append("suf3Next=" + tNext[-3:])
+            tokenFeatures.append("pref3Prev=" + tNext[:3])
             tokenFeatures.append("isUpperNext=" + str(tNext.isupper()))
         else:
             tokenFeatures.append("EoS")
