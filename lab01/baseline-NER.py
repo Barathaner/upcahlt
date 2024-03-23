@@ -79,7 +79,7 @@ def classify_token(txt):
 
     # achieves 45.7% F1
 
-    elif txt[0].isupper() and not txt.isupper() and len(txt) > 13:
+    elif txt[0].isupper() and not txt.isupper() and  13< len(txt) <20  and  not re.search(r"[^a-zA-Z0-9\s]", txt):
         return "group"
     elif any(char.isdigit() for char in txt) and len(txt) > 8:
         return "drug_n"
